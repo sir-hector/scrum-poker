@@ -3,7 +3,7 @@ import bcrypt
 import config
 import database.database
 from getpass import getpass
-from users import rooms_service
+from rooms import rooms_service
 
 
 def delete_user(db: database.database):
@@ -31,7 +31,7 @@ def login(db: database.database):
 
     if user[1] == name.lower() and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
         print("Zalogowano")
-        config.user_id = user[2]
+        config.user_id = user[0]
         return True
 
     print("Błędne dane, spróbuj ponownie")
@@ -41,7 +41,7 @@ def login(db: database.database):
 def register(db: database.database):
     name = input("Wprowadz imie: ")
     password = getpass("Wprowadź hasło: ")
-    if db.check_user_name_exists(name) == 0:
+    if db.check_name_exists('users', name) == 0:
         print("Nazwa już istnieje spróbuj jeszcze raz: ")
         return False
     if not re.fullmatch(r'[A-Za-z0-9]*$', name):
@@ -49,7 +49,7 @@ def register(db: database.database):
         return False
     if re.fullmatch(r'[A-Za-z0-9@#$%^&+=!?]{8,}', password):
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
-        db.add(name.lower(), hashed_password)
+        db.add('users', name.lower(), hashed_password)
         print('Utworzono konto, możesz się zalogować')
         return True
     else:
@@ -78,7 +78,7 @@ def choice(action, db):
         find_users(db)
         run(db)
     elif action == 'P':
-        # RoomService.run()
+        rooms_service.run(db)
         run(db)
     else:
         list_all(db)

@@ -1,33 +1,31 @@
 from dotenv import load_dotenv
 from os import getenv
 import database.database
-import users.user_service as service
-import database.database as data
 from users import user_service
 load_dotenv()
 
 
-def access(select, db2):
+def access(select, db):
     if select == 'L':
-        if user_service.login(db2):
+        if user_service.login(db):
             grant()
             return
         else:
-            program(db2)
+            program(db)
     else:
-        if not user_service.register(db2):
-            access('R', db2)
+        if not user_service.register(db):
+            access('R', db)
         else:
-            program(db2)
+            program(db)
 
 
-def program(db2):
+def program(db):
     global select
     select = input("L - Logowanie, R = Rejestracja: ")
     if select != "L" and select != "R":
-        program(db2)
+        program(db)
     else:
-        access(select, db2)
+        access(select, db)
 
 
 def grant():
@@ -38,11 +36,9 @@ def grant():
 if __name__ == '__main__':
 
     # database.database.cli()
-    db2 = database.database.get_database(getenv('DB_NAME'))
-    print(db2)
-    db = data.Database('db.csv')
-    db.check_db_exists()
+    db = database.database.get_database(getenv('DB_NAME'))
+    print(db)
     granted = False
-    program(db2)
+    program(db)
     if granted:
-        user_service.run(db2)
+        user_service.run(db)

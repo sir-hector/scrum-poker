@@ -1,22 +1,12 @@
 import sys
-import csv
 import os
-import bcrypt
-import re
-import config
-from os import getenv
 from dotenv import load_dotenv
 import sqlite3
-import click
-
 load_dotenv()
 
 
 class Database:
     def __init__(self, database_name):
-        self.current_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        self.db_path = os.path.join(self.current_dir, 'db.csv')
-        # self.db_path = os.path.join(self.current_dir, db_path)
         self.connection = sqlite3.connect(database_name)
         self.cursor = self.connection.cursor()
 
@@ -26,8 +16,8 @@ class Database:
     def init(self):
         return self
 
-    def check_user_name_exists(self, username):
-        find_users = self.fetch_all_with_conditions('users', name=username)
+    def check_name_exists(self, table, username):
+        find_users = self.fetch_all_with_conditions(table, name=username)
         if len(find_users.fetchall()) > 0:
             return 0
 
@@ -36,12 +26,17 @@ class Database:
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
-    def check_db_exists(self):
-        try:
-            os.stat(self.db_path)
-        except FileNotFoundError:
-            f = open(self.db_path, "w")
-            f.close()
+    def delete2(self, table, name):
+        sql = f"DELETE FROM {table} WHERE roomId=?"
+        self.cursor.execute(sql, (name,))
+        self.connection.commit()
+
+    # def check_db_exists(self):
+    #     try:
+    #         os.stat(self.db_path)
+    #     except FileNotFoundError:
+    #         f = open(self.db_path, "w")
+    #         f.close()
 
     def find_users(self, select_user):
         find_users = self.fetch_all_with_conditions('users', name=select_user)
@@ -65,9 +60,9 @@ class Database:
     def fetch_all(self, table):
         return self.cursor.execute(f"SELECT name FROM {table}")
 
-    def add(self, name, password):
+    def add(self, table, name, password):
         print('Dodaje do bazy danych')
-        self.insert('users', None, name, password)
+        self.insert(table, None, name, password)
 
     def index(self, category):
         print('Lista uzytkownikow')
@@ -87,11 +82,13 @@ def get_database(path):
 
 
 # @click.command()
-# def setup():
-#     print('Tworzenie Tabeli w bazie danych')
-#     db = Database(getenv('DB_NAME'))
-#     db.create_table('''CREATE TABLE users
-#         (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)''')
+def setup(db):
+    # db.create_table('''CREATE TABLE users
+    #     (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)''')
+    db.create_table('''CREATE TABLE rooms
+            (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, ownerID INTEGER)''')
+    db.create_table('''CREATE TABLE rooms_members
+                (roomId INTEGER , ownerId INTEGER)''')
 
 
 # @click.command()
