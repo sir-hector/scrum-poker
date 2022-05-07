@@ -76,40 +76,16 @@ def get_database(path):
     db.init()
     return db
 
-# @click.group()
-# def cli():
-#     pass
 
 
-# @click.command()
-def setup(db):
-    # db.create_table('''CREATE TABLE users
-    #     (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)''')
+def initialize_db(db):
+    db.create_table('''CREATE TABLE users
+        (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)''')
     db.create_table('''CREATE TABLE rooms
-            (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, ownerID INTEGER)''')
+            (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, ownerID INTEGER, topic TEXT)''')
     db.create_table('''CREATE TABLE rooms_members
                 (roomId INTEGER , ownerId INTEGER)''')
 
 
-# @click.command()
-# @click.argument('name')
-# @click.argument('password')
-# def add(name, password):
-#     print('Dodaje do bazy danych')
-#     db = Database(getenv('DB_NAME'))
-#     db.insert('users', None, name, password)
 
 
-# @click.command()
-# @click.argument('category')
-# def index(category):
-#     print('Lista uzytkownikow')
-#     db = Database(getenv('DB_NAME'))
-#     links = db.fetch_all('users', name=category)
-#     for link in links:
-#         print(link)
-
-
-# cli.add_command(setup)
-# cli.add_command(add)
-# cli.add_command(index)

@@ -1,10 +1,17 @@
 import re
+from os import getenv
 import bcrypt
+import click
 import config
 import database.database
 from getpass import getpass
+import rooms
 from rooms import rooms_service
 
+
+@click.group()
+def user():
+    pass
 
 def delete_user(db: database.database):
     name = input("Podaj nazwe użytkownika do usunięcia: ")
@@ -24,9 +31,13 @@ def list_all(db: database.database):
         print(user)
 
 
-def login(db: database.database):
-    name = input("Wprowadz imie: ")
-    password = getpass("Wprowadź hasło: ")
+@user.group('login')
+@click.option("--name", required=True)
+@click.password_option()
+@click.pass_obj
+def login(obj, name, password):
+    db = database.database.get_database(getenv('DB_NAME'))
+    obj['db'] = db
     user = (db.find_users(name)).fetchone()
 
     if user[1] == name.lower() and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
@@ -37,10 +48,15 @@ def login(db: database.database):
     print("Błędne dane, spróbuj ponownie")
     return False
 
+login.add_command(rooms.rooms_service.room)
 
-def register(db: database.database):
-    name = input("Wprowadz imie: ")
-    password = getpass("Wprowadź hasło: ")
+@user.command()
+@click.option("--name", required=True)
+@click.password_option()
+@click.pass_obj
+def register(obj, name, password):
+    db = database.database.get_database(getenv('DB_NAME'))
+    obj['db'] = db
     if db.check_name_exists('users', name) == 0:
         print("Nazwa już istnieje spróbuj jeszcze raz: ")
         return False

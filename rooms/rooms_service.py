@@ -1,11 +1,15 @@
 import re
-
 import bcrypt
-
+import click
 import database.database
 import config
 from getpass import getpass
-import users.user_service
+import users
+
+
+@click.group()
+def room():
+    pass
 
 
 def run(db: database.database):
@@ -20,13 +24,17 @@ def run(db: database.database):
 
 def choice(db, action):
     if action == 'U':
-        make_room(db)
+        name = input("Wprowadz nazwę: ")
+        password = getpass("Wprowadź hasło: ")
+        make_room(db, name, password)
         run(db)
     elif action == 'L':
         list_room(db)
         run(db)
     elif action == 'D':
-        join_room(db)
+        name = input("Wprowadź nazwę pokoju: ")
+        password = getpass("Wprowadź hasło: ")
+        join_room(db, name, password)
         run(db)
     elif action == 'Q':
         us = users.user_service.run(db)
@@ -36,10 +44,12 @@ def choice(db, action):
         run(db)
 
 
-def make_room(db):
-    name = input("Wprowadz nazwę: ")
-    password = getpass("Wprowadź hasło: ")
-
+@room.command()
+@click.option("--name", required=True)
+@click.password_option()
+@click.pass_obj
+def make_room(obj, name, password):
+    db = obj['db']
     if db.check_name_exists('rooms', name) == 0:
         print("Nazwa już istnieje spróbuj jeszcze raz: ")
         return False
@@ -59,18 +69,21 @@ def make_room(db):
         return False
 
 
-def list_room(db):
+@room.command()
+@click.pass_obj
+def list_room(obj):
+    db = obj['db']
     rooms = db.fetch_all('rooms')
     for room in rooms:
         print(room)
 
 
-def join_room(db):
-    print("Wybierz pokój do którego chcesz dołączyć: ")
-    print("Lista: ")
-    list_room(db)
-    name = input("Wprowadź nazwę pokoju: ")
-    password = getpass("Wprowadź hasło: ")
+@room.command()
+@click.option("--name", required=True)
+@click.password_option()
+@click.pass_obj
+def join_room(obj, name ,password):
+    db = obj['db']
 
     if (db.check_name_exists('rooms', name) is None):
         print("Nie ma takiego pokoju: ")
@@ -89,11 +102,12 @@ def join_room(db):
     return False
 
 
-def delete_room(db):
-    print("Wybierz pokój który chcesz usunąć:  ")
-    print("Lista: ")
-    list_room(db)
-    name = input("Wprowadź nazwę pokoju: ")
+@room.command()
+@click.option("--name", required=True)
+@click.password_option()
+@click.pass_obj
+def delete_room(obj, name, password):
+    db = obj['db']
 
     if db.check_name_exists('rooms', name) is None:
         print("Nie ma takiego pokoju: ")
@@ -105,7 +119,6 @@ def delete_room(db):
         print("nie mozna usunąć czyjegoś pokoju")
         return False
     else:
-        password = getpass("Wprowadź hasło: ")
         if bcrypt.checkpw(password.encode('utf-8'), room[2].encode('utf-8')):
             db.delete('rooms', room[1])
             db.delete2('rooms_members', room[0])
@@ -114,3 +127,10 @@ def delete_room(db):
             print("błędne hasło")
             return False
     return
+
+@room.command()
+@click.option("--name", required=True)
+@click.option("--topic", required=True)
+@click.pass_obj
+def create_topic(obj, name, topic):
+    pass

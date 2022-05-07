@@ -1,19 +1,28 @@
+import os
+from getpass import getpass
+
+import click
 from dotenv import load_dotenv
 from os import getenv
 import database.database
 from users import user_service
+
 load_dotenv()
 
 
 def access(select, db):
     if select == 'L':
-        if user_service.login(db):
+        name = input("Wprowadz imie: ")
+        password = getpass("Wprowadź hasło: ")
+        if user_service.login(db, name, password):
             grant()
             return
         else:
             program(db)
     else:
-        if not user_service.register(db):
+        name = input("Wprowadz imie: ")
+        password = getpass("Wprowadź hasło: ")
+        if not user_service.register(db, name, password):
             access('R', db)
         else:
             program(db)
@@ -32,13 +41,32 @@ def grant():
     global granted
     granted = True
 
+@click.group()
+@click.pass_context
+def run(ctx):
+    ctx.obj={}
 
-if __name__ == '__main__':
 
-    # database.database.cli()
+@run.command("run", help="run application")
+def run_application():
     db = database.database.get_database(getenv('DB_NAME'))
     print(db)
     granted = False
     program(db)
     if granted:
         user_service.run(db)
+
+
+
+@run.command("clear-db", help="Recreate DB")
+def initialize_db():
+    if os.stat(os.getenv('DB_NAME')):
+        os.remove(os.getenv('DB_NAME'))
+        db = database.database.get_database(getenv('DB_NAME'))
+        database.database.initialize_db(db)
+
+
+run.add_command(user_service.user)
+
+if __name__ == '__main__':
+    run()
