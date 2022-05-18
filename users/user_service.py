@@ -13,19 +13,29 @@ from rooms import rooms_service
 def user():
     pass
 
-def delete_user(db: database.database):
-    name = input("Podaj nazwe użytkownika do usunięcia: ")
+
+@user.command('delete-user')
+@click.option("--name", required=True)
+@click.pass_obj
+def delete_user(obj, name):
+    db = obj['db']
     db.delete('users', name)
 
 
-def find_users(db: database.database):
-    select_user = input("Wprowadz szukana fraze: ")
-    users = db.find_users(select_user)
+@user.command('find-user')
+@click.option("--name", required=True)
+@click.pass_obj
+def find_users(obj, name):
+    db = obj['db']
+    users = db.find_users(name)
     for user in users:
         print(user)
 
 
-def list_all(db: database.database):
+@user.command('find-all')
+@click.pass_obj
+def list_all(obj):
+    db = obj['db']
     users = db.fetch_all('users')
     for user in users:
         print(user)
@@ -48,7 +58,9 @@ def login(obj, name, password):
     print("Błędne dane, spróbuj ponownie")
     return False
 
+
 login.add_command(rooms.rooms_service.room)
+
 
 @user.command()
 @click.option("--name", required=True)

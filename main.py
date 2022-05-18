@@ -44,8 +44,9 @@ def grant():
 @click.group()
 @click.pass_context
 def run(ctx):
+    db = database.database.get_database(getenv('DB_NAME'))
     ctx.obj={}
-
+    ctx.obj['db'] = db
 
 @run.command("run", help="run application")
 def run_application():

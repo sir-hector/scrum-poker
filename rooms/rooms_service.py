@@ -58,7 +58,7 @@ def make_room(obj, name, password):
         return False
     if re.fullmatch(r'[A-Za-z0-9@#$%^&+=!?]{8,}', password):
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
-        db.insert('rooms', None, name.lower(), hashed_password, config.user_id)
+        db.insert('rooms', None, name.lower(), hashed_password, config.user_id, "")
         print('Utworzono pokój')
         return True
     else:
@@ -128,9 +128,48 @@ def delete_room(obj, name, password):
             return False
     return
 
+
 @room.command()
 @click.option("--name", required=True)
 @click.option("--topic", required=True)
 @click.pass_obj
 def create_topic(obj, name, topic):
-    pass
+    db = obj['db']
+    if db.check_name_exists('rooms', name) is None:
+        print("Nie ma takiego pokoju: ")
+        return False
+    room = db.fetch_all_with_conditions('rooms', name=name).fetchone()
+    if config.user_id != room[3]:
+        print("nie mozna ustawic tematu nie swoim pokoju")
+        return False
+    # elif room[4]:
+    #     print("Jest aktualnie przypisany temat")
+    #     return False
+    else:
+        print('tutaj')
+        db.insert('room_topics', None, room[0], topic, 0)
+    return
+
+
+@room.command()
+@click.option("--topic-id", required=True)
+@click.option("--value", required=True)
+@click.pass_obj
+def rate_topic(obj, topic_id, value):
+    db = obj['db']
+    topic = db.fetch_all_with_conditions('room_topics', id=topic_id).fetchone()
+
+    if topic is None:
+        print("Topic is invalid")
+        return
+
+    roomId = topic[0]
+    room = db.fetch_all_with_conditions('rooms', id=roomId).fetchone()
+    if config.user_id != room[3]:
+        print("You are not in this room")
+        return False
+
+
+    db.insert('rooms_votes', None, value, config.user_id, topic_id)
+
+

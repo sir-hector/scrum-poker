@@ -31,12 +31,11 @@ class Database:
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
-    # def check_db_exists(self):
-    #     try:
-    #         os.stat(self.db_path)
-    #     except FileNotFoundError:
-    #         f = open(self.db_path, "w")
-    #         f.close()
+    def update(self,  name, roomId):
+        sql = f"UPDATE rooms set topic = '{name}' where id = {roomId}"
+        print(sql)
+        self.cursor.execute(sql)
+        self.connection.commit()
 
     def find_users(self, select_user):
         find_users = self.fetch_all_with_conditions('users', name=select_user)
@@ -46,6 +45,7 @@ class Database:
     def create_table(self, sql: str):
         self.cursor.execute(sql)
         self.connection.commit()
+
 
     def insert(self, table, *values):
         self.cursor.execute(f"INSERT INTO {table} VALUES ({','.join(['?' for _ in values])})", values)
@@ -71,11 +71,11 @@ class Database:
             print(link)
 
 
+
 def get_database(path):
     db = Database(path)
     db.init()
     return db
-
 
 
 def initialize_db(db):
@@ -85,6 +85,10 @@ def initialize_db(db):
             (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, ownerID INTEGER, topic TEXT)''')
     db.create_table('''CREATE TABLE rooms_members
                 (roomId INTEGER , ownerId INTEGER)''')
+    db.create_table('''CREATE TABLE room_topics
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, roomId INTEGER , topic TEXT, status BOOLEAN)''')
+    db.create_table('''CREATE TABLE rooms_votes
+                (id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT, userID INTEGER, topicId INTEGER)''')
 
 
 
