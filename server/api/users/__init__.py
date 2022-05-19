@@ -1,13 +1,8 @@
-from starlette.endpoints import HTTPEndpoint
-from starlette.responses import PlainTextResponse
 from starlette.routing import Route
-
-
-class Login(HTTPEndpoint):
-    async def get(self, request):
-        return PlainTextResponse(f"Hello, world!")
-
+from server.api.users.endpoints import Login, Register, Refresh
 
 routes = [
-    Route("/", Login)
+    Route("/login", endpoint=Login),
+    Route("/refresh", endpoint=Refresh),
+    Route("/register", endpoint=Register)
 ]

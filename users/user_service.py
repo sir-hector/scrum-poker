@@ -111,3 +111,34 @@ def choice(action, db):
     else:
         list_all(db)
         run(db)
+
+
+def validate_login(login):
+    if not re.fullmatch(r'[A-Za-z0-9]*$', login):
+        return False
+    return True
+
+
+def validate_password(password):
+    if not re.fullmatch(r'[A-Za-z0-9@#$%^&+=!?]{8,}', password):
+        return False
+    return True
+
+
+def has_user(db, name):
+    if db.check_name_exists('users', name):
+        return False
+    return True
+
+
+def create_user(db, name, password):
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
+    db.add('users', name.lower(), hashed_password)
+
+
+def login_user(db, name, password):
+    user = (db.find_users(name)).fetchone()
+    if user and user[1] == name.lower() and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
+        return user[0]
+
+    return False

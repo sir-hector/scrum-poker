@@ -3,3 +3,5 @@ click==8.1.2
 python-dotenv==0.20.0
 starlette==0.20.0
 uvicorn==0.17.6
+pyjwt==2.4.0
+starlette-jwt==0.1.9

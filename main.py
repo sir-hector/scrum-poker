@@ -54,7 +54,6 @@ def run(ctx):
 @run.command("run", help="run application")
 def run_application():
     db = database.database.get_database(getenv('DB_NAME'))
-    print(db)
     granted = False
     program(db)
     if granted:

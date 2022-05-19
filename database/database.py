@@ -19,7 +19,7 @@ class Database:
     def check_name_exists(self, table, username):
         find_users = self.fetch_all_with_conditions(table, name=username)
         if len(find_users.fetchall()) > 0:
-            return 0
+            return True
 
     def delete(self, table, name):
         sql = f"DELETE FROM {table} WHERE name=?"
