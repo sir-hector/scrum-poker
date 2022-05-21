@@ -80,9 +80,9 @@ def list_room(obj):
 
 @room.command()
 @click.option("--name", required=True)
-@click.password_option()
+@click.password_option(confirmation_prompt=False)
 @click.pass_obj
-def join_room(obj, name ,password):
+def join_room(obj, name, password):
     db = obj['db']
 
     if (db.check_name_exists('rooms', name) is None):
@@ -104,7 +104,7 @@ def join_room(obj, name ,password):
 
 @room.command()
 @click.option("--name", required=True)
-@click.password_option()
+@click.password_option(confirmation_prompt=False)
 @click.pass_obj
 def delete_room(obj, name, password):
     db = obj['db']
@@ -113,7 +113,6 @@ def delete_room(obj, name, password):
         print("Nie ma takiego pokoju: ")
         return False
     room = db.fetch_all_with_conditions('rooms', name=name).fetchone()
-    print(room)
 
     if config.user_id != room[3]:
         print("nie mozna usunąć czyjegoś pokoju")
@@ -142,18 +141,41 @@ def create_topic(obj, name, topic):
     if config.user_id != room[3]:
         print("nie mozna ustawic tematu nie swoim pokoju")
         return False
-    # elif room[4]:
-    #     print("Jest aktualnie przypisany temat")
-    #     return False
-    else:
-        print('tutaj')
-        db.insert('room_topics', None, room[0], topic, 0)
-    return
+    roomsTopics = db.fetch_all_with_conditions('room_topics', roomId=room[0], status=0).fetchone()
+    if roomsTopics:
+        print("Pokój ma aktywny temat")
+        return False
+    print('Dodano temat')
+    db.insert('room_topics', None, room[0], topic, 0)
+    return True
+
+
+@room.command()
+@click.option("--name", required=True)
+@click.option("--topic", required=True)
+@click.pass_obj
+def delete_topic(obj, name, topic):
+    db = obj['db']
+    if db.check_name_exists('rooms', name) is None:
+        print("Nie ma takiego pokoju: ")
+        return False
+    room = db.fetch_all_with_conditions('rooms', name=name).fetchone()
+    if config.user_id != room[3]:
+        print("nie mozna zmieniać tematu w nie swoim pokoju")
+        return False
+    roomsTopics = db.fetch_all_with_conditions('room_topics', topic=topic).fetchone()
+    if roomsTopics is None:
+        print("Nie ma takiego tematu")
+        return False
+    print('Usunieto temat')
+    db.deleteVotes('rooms_votes', roomsTopics[0])
+    db.deleteTopic('room_topics', topic)
+    return True
 
 
 @room.command()
 @click.option("--topic-id", required=True)
-@click.option("--value", required=True)
+@click.option("--value", required=True, type=click.Choice(['0', '0.5', '1', '2', '3', '5', '8', '13', '20', '50', '100', '200', '-1', '-2']))
 @click.pass_obj
 def rate_topic(obj, topic_id, value):
     db = obj['db']
@@ -163,13 +185,11 @@ def rate_topic(obj, topic_id, value):
         print("Topic is invalid")
         return
 
-    roomId = topic[0]
-    room = db.fetch_all_with_conditions('rooms', id=roomId).fetchone()
-    if config.user_id != room[3]:
+    roomId = topic[1]
+    roomVoted = db.fetch_all_with_conditions('rooms', id=roomId).fetchone()
+    if config.user_id != roomVoted[3]:
         print("You are not in this room")
         return False
 
-
     db.insert('rooms_votes', None, value, config.user_id, topic_id)
-
-
+    print("Dodano głos")

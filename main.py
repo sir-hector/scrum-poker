@@ -44,12 +44,14 @@ def grant():
     global granted
     granted = True
 
+
 @click.group()
 @click.pass_context
 def run(ctx):
     db = database.database.get_database(getenv('DB_NAME'))
-    ctx.obj={}
+    ctx.obj = {}
     ctx.obj['db'] = db
+
 
 @run.command("run", help="run application")
 def run_application():
@@ -60,13 +62,13 @@ def run_application():
         user_service.run(db)
 
 
-
 @run.command("clear-db", help="Recreate DB")
 def initialize_db():
     if os.stat(os.getenv('DB_NAME')):
         os.remove(os.getenv('DB_NAME'))
         db = database.database.get_database(getenv('DB_NAME'))
         database.database.initialize_db(db)
+
 
 @run.command("run-as-server", help="run server")
 def run_server():

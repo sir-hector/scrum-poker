@@ -1,5 +1,3 @@
-import base64
-import binascii
 from os import getenv
 
 import uvicorn

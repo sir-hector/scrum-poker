@@ -31,6 +31,16 @@ class Database:
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
+    def deleteTopic(self, table, name):
+        sql = f"DELETE FROM {table} WHERE topic=?"
+        self.cursor.execute(sql, (name,))
+        self.connection.commit()
+
+    def deleteVotes(self, table, name):
+        sql = f"DELETE FROM {table} WHERE topicId=?"
+        self.cursor.execute(sql, (name,))
+        self.connection.commit()
+
     def update(self,  name, roomId):
         sql = f"UPDATE rooms set topic = '{name}' where id = {roomId}"
         print(sql)

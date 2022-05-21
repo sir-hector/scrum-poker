@@ -43,7 +43,7 @@ def list_all(obj):
 
 @user.group('login')
 @click.option("--name", required=True)
-@click.password_option()
+@click.password_option(confirmation_prompt=False)
 @click.pass_obj
 def login(obj, name, password):
     db = database.database.get_database(getenv('DB_NAME'))
