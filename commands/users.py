@@ -23,3 +23,7 @@ def login_user(db, login, password):
         raise LoginException("wrong_credentials")
 
     return user_service.login_user(db, login, password)
+
+
+def list_all(db):
+    return user_service.find_all_users(db)

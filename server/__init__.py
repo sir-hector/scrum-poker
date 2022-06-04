@@ -6,6 +6,8 @@ from starlette.applications import Starlette
 from starlette.authentication import AuthenticationBackend, SimpleUser, AuthCredentials, AuthenticationError
 from starlette.middleware import Middleware
 from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.routing import Mount
 from server.api import routes as api_routes
 
@@ -19,7 +21,8 @@ class BasicAuthBackend(AuthenticationBackend):
         if "Authorization" not in conn.headers:
             return
 
-        token = conn.headers["Authorization"]
+        test = conn.headers["Authorization"]
+        token = test.split()[1]
         try:
             payload = jwt.decode(token, key=getenv('SECRET_KEY'), algorithms='HS256')
         except jwt.InvalidTokenError as e:
@@ -29,7 +32,9 @@ class BasicAuthBackend(AuthenticationBackend):
 
 
 middleware = [
-    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend())
+    Middleware(AuthenticationMiddleware, backend=BasicAuthBackend()),
+    Middleware(TrustedHostMiddleware, allowed_hosts=['*']),
+    Middleware(CORSMiddleware, allow_origins=['*'], allow_methods=['*'], allow_headers=['*']),
 ]
 
 

@@ -1,4 +1,7 @@
-class User:
-    def __init__(self, login):
-        self._login = login
-        
+from pydantic import BaseModel
+
+
+class User(BaseModel):
+    username: str
+
+
