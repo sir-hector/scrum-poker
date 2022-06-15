@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class Vote(BaseModel):
     username: str
-    value: str
+    value: int
 
 
 class Votes(BaseModel):

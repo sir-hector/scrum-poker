@@ -203,8 +203,9 @@ def rate_topic(obj, topic_id, value):
 
 
 def get_all_rooms(db, user_id) -> List[Room]:
-    rooms = db.fetch_all_rooms('rooms', user_id)
-    return [Room(name=room[1], id=room[0], owner=room[2]) for room in rooms]
+    rooms = db.fetch_all_with_conditions('rooms_members', ownerId=user_id)
+    print(rooms)
+    return [Room(name=room[1], id=room[0], owner=room[1]) for room in rooms]
 
 
 def validate_name(db, name):
@@ -274,7 +275,7 @@ def get_all_votes(db, room_id):
     room_topic = db.fetch_all_with_conditions('room_topics', roomId=room_id).fetchone()
     topic_ud = room_topic[0]
     votes = db.fetch_all_votes('rooms_votes', topic_ud)
-    votes = [Vote(username=vote[1], value=vote[0]) for vote in votes]
+    votes = [Vote(username=vote[1], value=float(vote[0])) for vote in votes]
     return Votes(votes=votes)
 
 
