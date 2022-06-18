@@ -6,3 +6,4 @@ uvicorn==0.17.6
 pyjwt==2.4.0
 starlette-jwt==0.1.9
 pydantic~=1.9.1
+sqlalchemy==1.4.37

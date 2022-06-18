@@ -8,3 +8,6 @@ class Room(BaseModel):
     id: int
     owner: str
     users: list[User] = []
+
+    class Config:
+        orm_mode = True

@@ -58,12 +58,6 @@ class Database:
         self.cursor.execute(sql)
         self.connection.commit()
 
-    # def updateVote(self, value, userID, topicId):
-    #     sql = f"INSERT INTO rooms_votes (value, userID, topicId) VALUES ({value}, {userID}, {topicId}) ON CONFLICT (userID) DO UPDATE SET value = {value}"
-    #     print(sql)
-    #     self.cursor.execute(sql)
-    #     self.connection.commit()
-
     def find_users(self, select_user):
         find_users = self.fetch_all_with_conditions('users', name=select_user)
         return find_users

@@ -1,12 +1,13 @@
 import re
 from os import getenv
 from typing import List
+from database.sql import User, SessionLocal, engine
+from database.sql import User as User2
 
 import bcrypt
 import click
 import config
 import database.database
-from getpass import getpass
 import rooms
 from database.users_model import User
 from rooms import rooms_service
@@ -128,24 +129,27 @@ def validate_password(password):
     return True
 
 
-def has_user(db, name):
-    if db.check_name_exists('users', name):
+def has_user(session, name):
+    users = session.query(User2).filter(User2.name == name).first()
+    if users:
         return False
     return True
 
 
-def create_user(db, name, password):
+def create_user(session, name, password):
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
-    db.add('users', name.lower(), hashed_password)
+    new_user = User2(name=name, password=hashed_password)
+    session.add(new_user)
+    session.commit()
 
 
-def login_user(db, name, password):
-    user = (db.find_users(name)).fetchone()
-    if user and user[1] == name.lower() and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
-        return user[0]
+def login_user(session, name, password):
+    user = session.query(User2).filter(User2.name == name).first()
+    if user and user.name == name.lower() and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+        return user.id
     return False
 
 
-def find_all_users(db) -> List[User]:
-    users = db.fetch_all('users')
-    return [User(username=user[0]) for user in users]
+def find_all_users(session) -> List[User]:
+    users2 = session.query(User2).all()
+    return [User(username=user.name) for user in users2]

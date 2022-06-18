@@ -4,13 +4,19 @@ from typing import List
 
 import bcrypt
 import click
+from sqlalchemy import and_
+
 import database.database
 import config
 from getpass import getpass
 import users
 from database.room_model import Room
+from database.sql import SessionLocal, engine, association_table, RoomVotes
 from database.users_model import User
 from database.vote_model import Vote, Votes
+from database.sql import Room as Room2
+from database.sql import User as User2
+from database.sql import RoomTopic as RoomTopic
 
 
 @click.group()
@@ -202,14 +208,21 @@ def rate_topic(obj, topic_id, value):
     print("Dodano głos")
 
 
-def get_all_rooms(db, user_id) -> List[Room]:
-    rooms = db.fetch_all_with_conditions('rooms_members', ownerId=user_id)
-    print(rooms)
-    return [Room(name=room[1], id=room[0], owner=room[1]) for room in rooms]
+def get_all_rooms(user_id) -> List[Room]:
+    local_session = SessionLocal(bind=engine)
+    user = local_session.query(User2) \
+        .filter(User2.id == user_id) \
+        .first()
+    rooms = user.rooms
+    return [Room(name=room.name, id=room.id, owner=room.owner.name) for room in rooms]
 
 
 def validate_name(db, name):
-    return db.check_name_exists('rooms', name)
+    local_session = SessionLocal(bind=engine)
+    room = local_session.query(Room2).filter(Room2.name == name).first()
+    if room:
+        return False
+    return True
 
 
 def validate_password(password):
@@ -220,78 +233,102 @@ def validate_password(password):
 
 def create_room(db, name, password, userId):
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(14)).decode('utf-8')
-    db.insert('rooms', None, name.lower(), hashed_password, userId, "")
-    return True
+    local_session = SessionLocal(bind=engine)
+    new_room = Room2(name=name, password=hashed_password, ownerId=userId)
+    local_session.add(new_room)
+    local_session.commit()
 
 
 def find_room_by_id(db, id):
-    room = db.fetch_all_with_conditions('rooms', id=id).fetchone()
+    local_session = SessionLocal(bind=engine)
+    room = local_session.query(Room2).filter(Room2.id == id).first()
+
     if not room:
         return False
-    rooms_members = db.fetch_all_with_conditions('rooms_members', roomId=id).fetchall()
-    members = [User(username=user[0]) for user in rooms_members]
-    return Room(id=room[0], name=room[1], owner=room[3], users=members)
+    members = [User(username=user.name) for user in room.users]
+
+    return Room(id=room.id, name=room.name, owner=room.owner.id, users=members)
 
 
 def check_if_room_has_user(db, room_id, userId):
-    rooms_members = db.fetch_all_with_conditions('rooms_members', roomId=room_id, ownerId=userId).fetchone()
-    if rooms_members is None:
+    local_session = SessionLocal(bind=engine)
+    query_rooms_member = local_session.query(association_table).filter(association_table.c.user_id == userId) \
+        .filter(association_table.c.room_id == room_id).first()
+    if query_rooms_member is None:
         return False
     return True
 
 
 def room_join(db, room_id, password, user_id):
-    room = db.fetch_all_with_conditions('rooms', id=room_id).fetchone()
-    if bcrypt.checkpw(password.encode('utf-8'), room[2].encode('utf-8')):
-        db.insert('rooms_members', room_id, user_id)
+    local_session = SessionLocal(bind=engine)
+    room = local_session.query(Room2).filter(Room2.id == room_id).first()
+    user = local_session.query(User2).filter(User2.id == user_id).first()
+    if bcrypt.checkpw(password.encode('utf-8'), room.password.encode('utf-8')):
+        room.users.append(user)
+        local_session.commit()
         return True
     return False
 
 
 def check_if_is_owner(db, room_id, userId):
-    room = db.fetch_all_with_conditions('rooms', id=room_id).fetchone()
-    if userId == room[3]:
+    local_session = SessionLocal(bind=engine)
+    room = local_session.query(Room2).filter(Room2.id == room_id).filter(Room2.ownerId == userId).first()
+    if room:
         return True
     return False
 
 
 def check_if_room_has_topic(db, room_id):
-    room_topic = db.fetch_all_with_conditions('room_topics', roomId=room_id).fetchone()
+    local_session = SessionLocal(bind=engine)
+    room_topic = local_session.query(RoomTopic).where(RoomTopic.roomId == room_id).first()
     if room_topic is None:
         return False
     return True
 
 
 def update_topic(db, room_id, user_id, topic):
-    db.deleteRoomTopic('room_topics', room_id=room_id)
-    db.insert('room_topics', None, room_id, topic, 0)
-    room = db.fetch_all_with_conditions('rooms', id=room_id).fetchone()
-    rooms_members = db.fetch_all_with_conditions('rooms_members', roomId=room_id).fetchall()
-    members = [User(username=user[0]) for user in rooms_members]
-    return Room(id=room[0], name=room[1], owner=room[3], members=members)
+    local_session = SessionLocal(bind=engine)
+    room_topic = local_session.query(RoomTopic).where(RoomTopic.roomId == room_id).first()
 
+    if room_topic:
+        local_session.query(RoomVotes).filter_by(topicId=room_topic.id).delete()
+        local_session.delete(room_topic)
+        local_session.commit()
 
-def get_all_votes(db, room_id):
-    room_topic = db.fetch_all_with_conditions('room_topics', roomId=room_id).fetchone()
-    topic_ud = room_topic[0]
-    votes = db.fetch_all_votes('rooms_votes', topic_ud)
-    votes = [Vote(username=vote[1], value=float(vote[0])) for vote in votes]
-    return Votes(votes=votes)
+    new_topic = RoomTopic(topic=topic, roomId=room_id, status=0)
+    local_session.add(new_topic)
+    local_session.commit()
 
-
-def get_user_votes(db, room_id, user_id):
-    room_topic = db.fetch_all_with_conditions('room_topics', roomId=room_id).fetchone()
-    topic_ud = room_topic[0]
-    votes = db.fetch_all_with_conditions('rooms_votes', userID=user_id, topicId=topic_ud).fetchone()
-    if votes is None:
-        return False
     return True
 
 
-def put_votes(db, value, userID, room_id, condition):
-    room_topic = db.fetch_all_with_conditions('room_topics', roomId=room_id).fetchone()
-    topic_id = room_topic[0]
-    if not condition:
-        db.insert('rooms_votes', None, value, userID, topic_id)
-    db.update_vote(value, topic_id)
+def get_all_votes(db, room_id):
+    local_session = SessionLocal(bind=engine)
+    votes = local_session.query(RoomVotes) \
+        .join(User2) \
+        .join(RoomTopic) \
+        .filter(RoomTopic.roomId == room_id) \
+        .all()
 
+    result = [Vote(username=vote.users.name, value=float(vote.value)) for vote in votes]
+    return Votes(votes=result)
+
+
+def put_votes(db, room_id, user_id, value):
+    local_session = SessionLocal(bind=engine)
+    UserVote = local_session.query(RoomVotes) \
+        .join(User2) \
+        .join(RoomTopic) \
+        .filter(User2.id == user_id) \
+        .filter(RoomTopic.roomId == room_id) \
+        .first()
+    print(UserVote)
+    if UserVote is not None:
+        UserVote.value = value
+        local_session.add(UserVote)
+        local_session.commit()
+    else:
+        topicId = local_session.query(RoomTopic).filter(RoomTopic.roomId == room_id).first()
+        newVote = RoomVotes(value=value, topicId=topicId.id, userId=user_id)
+        local_session.add(newVote)
+        local_session.commit()

@@ -16,8 +16,8 @@ class GetRooms(HTTPEndpoint):
     @requires('authenticated', status_code=401)
     async def get(self, request):
         user_id = request.scope["user"].username
-        db = database.get_database(getenv('DB_NAME'))
-        rooms = list_all(db, user_id)
+
+        rooms = list_all(user_id)
         print(rooms)
         json_string = json.dumps([dict(ob) for ob in rooms])
         return PlainTextResponse(json_string, status_code=200)
