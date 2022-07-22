@@ -19,7 +19,7 @@ class Database:
     def check_name_exists(self, table, username):
         find_users = self.fetch_all_with_conditions(table, name=username)
         if len(find_users.fetchall()) > 0:
-            return 0
+            return True
 
     def delete(self, table, name):
         sql = f"DELETE FROM {table} WHERE name=?"
@@ -28,6 +28,16 @@ class Database:
 
     def delete2(self, table, name):
         sql = f"DELETE FROM {table} WHERE roomId=?"
+        self.cursor.execute(sql, (name,))
+        self.connection.commit()
+
+    def deleteTopic(self, table, name):
+        sql = f"DELETE FROM {table} WHERE topic=?"
+        self.cursor.execute(sql, (name,))
+        self.connection.commit()
+
+    def deleteVotes(self, table, name):
+        sql = f"DELETE FROM {table} WHERE topicId=?"
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
