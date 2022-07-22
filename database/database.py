@@ -2,6 +2,7 @@ import sys
 import os
 from dotenv import load_dotenv
 import sqlite3
+
 load_dotenv()
 
 
@@ -20,13 +21,14 @@ class Database:
         find_users = self.fetch_all_with_conditions(table, name=username)
         if len(find_users.fetchall()) > 0:
             return True
+        return False
 
     def delete(self, table, name):
         sql = f"DELETE FROM {table} WHERE name=?"
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
-    def delete2(self, table, name):
+    def deleteMembers(self, table, name):
         sql = f"DELETE FROM {table} WHERE roomId=?"
         self.cursor.execute(sql, (name,))
         self.connection.commit()
@@ -36,14 +38,23 @@ class Database:
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
+    def deleteRoomTopic(self, table, room_id):
+        sql = f"DELETE FROM {table} WHERE roomId=?"
+        self.cursor.execute(sql, (room_id,))
+        self.connection.commit()
+
     def deleteVotes(self, table, name):
         sql = f"DELETE FROM {table} WHERE topicId=?"
         self.cursor.execute(sql, (name,))
         self.connection.commit()
 
-    def update(self,  name, roomId):
+    def update(self, name, roomId):
         sql = f"UPDATE rooms set topic = '{name}' where id = {roomId}"
-        print(sql)
+        self.cursor.execute(sql)
+        self.connection.commit()
+
+    def update_vote(self, value, topicId):
+        sql = f"UPDATE rooms_votes set value = '{value}' where topicId = {topicId}"
         self.cursor.execute(sql)
         self.connection.commit()
 
@@ -51,11 +62,9 @@ class Database:
         find_users = self.fetch_all_with_conditions('users', name=select_user)
         return find_users
 
-
     def create_table(self, sql: str):
         self.cursor.execute(sql)
         self.connection.commit()
-
 
     def insert(self, table, *values):
         self.cursor.execute(f"INSERT INTO {table} VALUES ({','.join(['?' for _ in values])})", values)
@@ -80,6 +89,11 @@ class Database:
         for link in links:
             print(link)
 
+    def fetch_all_rooms(self, table, user_id):
+        return self.cursor.execute(f"SELECT id, name, ownerID FROM {table} where ownerID = {user_id}")
+
+    def fetch_all_votes(self, table, topic_id):
+        return self.cursor.execute(f"SELECT value, userID FROM {table} where topicId = {topic_id}")
 
 
 def get_database(path):
@@ -99,7 +113,3 @@ def initialize_db(db):
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, roomId INTEGER , topic TEXT, status BOOLEAN)''')
     db.create_table('''CREATE TABLE rooms_votes
                 (id INTEGER PRIMARY KEY AUTOINCREMENT, value TEXT, userID INTEGER, topicId INTEGER)''')
-
-
-
-

@@ -1,5 +1,13 @@
-class Room:
-    def __init__(self, id , owner, password):
-        self._id = id
-        self._password = password
-        self._owner = owner
+from typing import Optional
+from pydantic import BaseModel
+from database.users_model import User
+
+
+class Room(BaseModel):
+    name: str
+    id: int
+    owner: str
+    users: list[User] = []
+
+    class Config:
+        orm_mode = True
